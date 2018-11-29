@@ -1,3 +1,5 @@
+extern crate aoc2018;
+
 fn main() {
-    println!("Hello, world!");
+    println!("Here we go again");
 }
