@@ -3,6 +3,7 @@ use std::collections::HashMap;
 #[cfg(test)]
 mod tests;
 mod part1;
+mod part2;
 
 #[derive(Debug)]
 struct State {
@@ -17,7 +18,7 @@ struct Checksum {
 
 impl State {
     pub fn new() -> State {
-        let mut s = HashMap::new();
+        let s = HashMap::new();
         State {
             seen: s
         }
