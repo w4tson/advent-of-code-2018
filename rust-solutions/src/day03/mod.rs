@@ -5,7 +5,6 @@ mod tests;
 
 use regex::Regex;
 use std::collections::HashMap;
-use regex::Match;
 
 
 #[derive(Debug)]
@@ -61,4 +60,17 @@ pub fn add(square: &FabricSq, grid : &mut Grid) {
             .or_insert(vec![])
             .push(square.id);
     }
+}
+
+pub fn to_grid(input: &str) -> Grid {
+    let mut grid : Grid = HashMap::new();
+
+    input
+        .lines()
+        .map(to_fabric_sq)
+        .for_each(|sq| {
+            add(&sq, &mut grid);
+        });
+    
+    grid
 }

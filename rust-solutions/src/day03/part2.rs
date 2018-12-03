@@ -1,29 +1,17 @@
 use crate::day03::Grid;
-use std::collections::HashMap;
-use crate::day03::to_fabric_sq;
-use crate::day03::add;
+use itertools::Itertools;
 
-pub fn solve_part2(input : &str) -> u32 {
-    let mut grid : Grid = HashMap::new();
 
-    input
-        .lines()
-        .map(to_fabric_sq)
-        .for_each(|sq| {
-            add(&sq, &mut grid);
-        });
+pub fn solve_part2(grid : Grid) -> u32 {
 
     let overlapping : Vec<&u32> = grid.values()
         .filter(|&entries| entries.len() > 1)
-        .flatten()
+        .flat_map(|x|x)
         .collect();
 
-    input
-        .lines()
-        .map(to_fabric_sq)
-        .find(|sq| !overlapping.contains(&&sq.id))
-        .unwrap()
-        .id
-        
-    
+    *grid.values()
+        .flat_map(|x| x) // should use flatten but https://github.com/rust-lang/rust/issues/48919 etc
+        .dedup()
+        .find(|id| !overlapping.contains(&&id))
+        .unwrap_or_else(|| panic!("Couldn't find the answer"))
 }

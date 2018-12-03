@@ -5,6 +5,7 @@ extern crate spectral;
 #[macro_use] extern crate lazy_static;
 extern crate regex;
 extern crate core;
+extern crate itertools;
 
 
 pub mod utils;
