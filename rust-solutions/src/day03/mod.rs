@@ -20,9 +20,6 @@ impl FabricSq {
     pub fn coords(&self) -> Vec<(u32, u32)> {
         let mut coords : Vec<(u32, u32)> = vec![];
         
-        println!("x in {}..{}",self.left, self.left + self.width );
-        println!("y in {}..{}",self.top, self.top + self.height );
-        
         for x in self.left..(self.left + self.width ) {
             for y in self.top..(self.top + self.height ) {
                 coords.push((x,y));
@@ -30,6 +27,14 @@ impl FabricSq {
         }
         
         coords
+    }
+
+    pub fn add_all(&self, grid : &mut Grid) {
+        for coord in self.coords() {
+            grid.entry(coord)
+                .or_insert(vec![])
+                .push(self.id);
+        }
     }
 }
 
@@ -48,29 +53,17 @@ pub fn to_fabric_sq(line : &str) -> FabricSq {
     let height: u32 = cap.get(5).map_or(0, |m| m.as_str().parse().unwrap_or(0));
     
     FabricSq { id, top, left, width, height }
-
 }
 
 pub type Grid = HashMap<(u32, u32), Vec<u32>>;
 
-
-pub fn add(square: &FabricSq, grid : &mut Grid) {
-    for coord in square.coords() {
-        grid.entry(coord)
-            .or_insert(vec![])
-            .push(square.id);
-    }
-}
-
 pub fn to_grid(input: &str) -> Grid {
-    let mut grid : Grid = HashMap::new();
-
     input
         .lines()
         .map(to_fabric_sq)
-        .for_each(|sq| {
-            add(&sq, &mut grid);
-        });
-    
-    grid
+        .fold(HashMap::new(),| grid, sq| {
+            let mut new_grid = grid;
+            sq.add_all(&mut new_grid);
+            new_grid
+        })
 }
