@@ -5,6 +5,7 @@ mod tests;
 
 use regex::Regex;
 use std::collections::HashMap;
+use regex::Match;
 
 
 #[derive(Debug)]
@@ -39,7 +40,7 @@ pub fn to_fabric_sq(line : &str) -> FabricSq {
         static ref RE: Regex = Regex::new(r"^#(\d+) @ (\d+),(\d+): (\d+)x(\d+)$").unwrap();
     }
 
-    let cap = RE.captures_iter(line).next().unwrap();
+    let cap = RE.captures_iter(line).next().unwrap_or_else(|| panic!("Problem parsing {}", line));
     
     let id: u32 = cap.get(1).map_or(0, |m| m.as_str().parse().unwrap_or(0));
     let left: u32 = cap.get(2).map_or(0, |m| m.as_str().parse().unwrap_or(0));
