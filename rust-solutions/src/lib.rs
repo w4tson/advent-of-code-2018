@@ -6,9 +6,11 @@ extern crate spectral;
 extern crate regex;
 extern crate core;
 extern crate itertools;
+extern crate chrono;
 
 
 pub mod utils;
 pub mod day01;
 pub mod day02;
 pub mod day03;
+pub mod day04;
