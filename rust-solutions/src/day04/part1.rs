@@ -1,6 +1,4 @@
-use crate::day04::to_observations;
 use std::collections::HashMap;
-use crate::day04::Wake;
 use crate::day04::State;
 
 
