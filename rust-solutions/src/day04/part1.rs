@@ -10,8 +10,6 @@ struct State {
     
 }
 
-
-
 pub fn solve_part1(input : &str) -> i32 {
     let observations = to_observations(input);
     let guard_sleep : HashMap<i32, i32> = HashMap::new();
