@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use crate::utils::dupes;
 
 type Grid = HashMap<(i32, i32), Vec<i32>>;
+type Coord= (i32, i32);
 
 struct GridData {
     grid: HashMap<(i32, i32), Vec<i32>>,
@@ -27,6 +28,12 @@ impl GridData {
                 grid.insert(*coord, vec![i as i32]);
             });
         GridData { grid, size: GridData::size_of_grid(&coords), coords, ring: 1 }
+    }
+    
+    pub fn manhatten_dist(&self, coord1: Coord, coord2: Coord) -> i32 {
+        let x = coord1.0 - coord2.0;
+        let y = coord1.1 - coord2.1;
+        x.abs() + y.abs()
     }
     
     pub fn round(&mut self) {
