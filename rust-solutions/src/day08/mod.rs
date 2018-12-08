@@ -4,7 +4,7 @@ use std::fmt::Error;
 
 pub mod parse;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node {
     children: Vec<Node>,
     metadata: Vec<i32>

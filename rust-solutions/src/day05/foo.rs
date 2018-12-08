@@ -85,7 +85,7 @@ named!(fabric(&str) -> Fabric,
         tag!(": ") >>
         width: int32 >>
         tag!("x") >>
-        height: complete!(int32) >>
+        _height: complete!(int32) >>
         ( Fabric { id, top, left, width, height: 0 } )
     )
 );
@@ -102,7 +102,7 @@ struct Fabric {
 impl FromStr for Fabric {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+    fn from_str(_s: &str) -> Result<Self, <Self as FromStr>::Err> {
         Ok(Fabric { id: 0, top:0, left: 0, width: 0, height: 0 })
     }
 }

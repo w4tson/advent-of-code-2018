@@ -75,7 +75,7 @@ impl Graph {
             workers
                 .iter_mut()
                 .enumerate()
-                .for_each(|(i, mut worker)| {
+                .for_each(|(_, worker)| {
                     
                     if let Some(n) = worker.do_work() {
                         L.push(n);
@@ -94,8 +94,7 @@ impl Graph {
             
             workers
                 .iter_mut()
-                .enumerate()
-                .for_each(|(i, mut worker)| {
+                .for_each(|worker| {
                     if worker.is_free() {
                         if let Some(n) = S.pop() {
                             worker.accept(n);

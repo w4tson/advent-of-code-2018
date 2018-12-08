@@ -4,23 +4,21 @@ use std::fmt::Error;
 use std::prelude::v1::Vec;
 
 pub fn create_node(data: &[i32]) -> Node {
-    let (children_size, meta) = (data[0], data[1] as usize);
+    let (children_size, metadata_size) = (data[0], data[1] as usize);
     let data = &data[2..];
         
     match children_size {
-        0 => Node::new(vec![], data[0..meta].to_vec()),
+        0 => Node::new(vec![], data[0..metadata_size].to_vec()),
         _ => { 
-            let mut node_size = 0;
-            let mut children = vec![];
-            for i in 0..children_size {
-                let n = create_node(&data[node_size..]);
-                node_size += n.size();
-                children.push(n);
-            }
-            let meta = data[node_size..node_size+meta].to_vec();
+            let (offset, children) = (0..children_size)
+                .fold((0, vec![]),|(offset, children) , _ | {
+                    let child = create_node(&data[offset..]);
+                    (offset + child.size(), [&children[..], &[child]].concat())
+                });
+            
+            let metadata = data[offset..offset+metadata_size].to_vec();
 
-
-            Node::new(children, meta)
+            Node::new(children, metadata)
         }
     }
 }
