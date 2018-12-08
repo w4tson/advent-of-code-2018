@@ -1,8 +1,4 @@
-use nom::*;
-use std::str::FromStr;
 use std::collections::HashMap;
-use core::fmt::Error;
-use itertools::Itertools;
 use std::prelude::v1::Vec;
 use super::worker::Worker;
 
