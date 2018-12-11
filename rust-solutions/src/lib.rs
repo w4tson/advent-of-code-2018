@@ -8,6 +8,8 @@ extern crate regex;
 extern crate core;
 extern crate itertools;
 extern crate chrono;
+extern crate bmp;
+extern crate image;
 
 
 pub mod utils;
