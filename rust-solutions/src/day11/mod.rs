@@ -1,6 +1,8 @@
 use itertools::Itertools;
 use std::collections::HashMap;
 
+const GRID_SIZE: usize = 300;
+
 struct Grid {
     cells : Vec<i32>,
     serial : i32
@@ -9,98 +11,59 @@ struct Grid {
 impl Grid {
     pub fn new(serial: i32) -> Grid {
         
-        let mut cells = vec![0; 90000];
+        let mut cells: Vec<i32> = vec![0; (GRID_SIZE * GRID_SIZE)];
         
-        for y in 1..=300 {
-            for x in 1..=300 {
-
-                if x == 3 && y ==5 {
-                    println!("rack_id = {}", x + 10);
-                }
-                let rack_id = x + 10;
-                let mut power = (rack_id * y) + serial;
-
-                
-                
+        for y in 1..=GRID_SIZE {
+            for x in 1..=GRID_SIZE {
+                let rack_id = x as i32 + 10;
+                let mut power = (rack_id * y as i32) + serial;
                 power *= rack_id;
-                
-                power = Grid::hundredth(power);
-                
+                power = (power / 100) % 10;
                 power -= 5;
-//                println!("{}", power);
-                if x == 3 && y ==5 {
-                    println!("power = {}", power);
-                }
-                cells[(x-1 + ((y-1) * 300)) as usize ] = power;
-                
-               
+                cells[(x-1 + ((y-1) * GRID_SIZE)) as usize ] = power;
             }
         }
         
         Grid { cells, serial }
     }
     
-    pub fn hundredth(n :i32) -> i32 {
-        if n < 100 {
-            return 0;
-        } else {
-            let mut s = format!("{}", n);
-            let ch = s.remove(s.len() - 3);
-            //TODO could the hundreds digit be negative? nah
-            ch.to_digit(10).unwrap_or_else(|| panic!("problem converting char to num")) as i32
-            
-        }
-    }
-    
     pub fn power_at(&self, cell: (usize, usize)) -> i32 {
-        self.cells[cell.0-1 + ((cell.1-1) * 300)]
+        self.cells[cell.0-1 + ((cell.1-1) * GRID_SIZE)]
     }
     
     pub fn print_it(&self) {
-        for y in 1..=300 {
-            for x in 1..=300 {
-                print!("{}", self.cells[x-1 + ((y-1) * 300)]);
+        for y in 1usize..=GRID_SIZE as usize {
+            for x in 1usize..=GRID_SIZE as usize{
+                print!("{:3} ", self.cells[x-1 + ((y-1) * GRID_SIZE)]);
                 if x == 300 { println!("\t\t\t\t\t"); }
             }
         }
     }
     
-    pub fn largest_total_power(&self) -> (usize, usize) {
-
-        let conv_size = 278*278;
-        let mut conv = vec![0; conv_size];
-        let mut powers : HashMap<(usize, usize), i32> = HashMap::new();
+    pub fn largest_total_power(&self, square_size: usize) -> (usize, usize, i32) {
         
-        for y in 1..=278 {
-            for x in 1..=278 {
-                let mut i1 = self.cells.windows(3).skip(y * 301);
-                let mut i2 = self.cells.windows(3).skip((y + 1) * 301);
-                let mut i3 = self.cells.windows(3).skip((y + 2) * 301);
+        let max_conv_limit = GRID_SIZE - square_size +1;
+        let mut overall_max = (0,0, i32::min_value());
+        
+        for y in 1..=max_conv_limit {
+            for x in 1..=max_conv_limit {
                 
-                let top = i1.next().unwrap_or_else(|| panic!("nope1"));
-                let middle = i2.next().unwrap_or_else(|| panic!("nope2"));
-                let bottom = i3.next().unwrap_or_else(|| panic!("nope3"));
+                let mut total: i32 = 0;
                 
-                let max_vec = [&top[..], &middle[..], &bottom[..]].concat().clone();
-                
-                if x ==1 && y ==1 {
-                    eprintln!("max_vec = {:?}", max_vec);
+                for z in 0..square_size {
+                    let start_row = x-1+ ((y-1+z)*GRID_SIZE);
+                    let row = &self.cells[start_row..start_row+square_size];
+                    total += row.iter().sum::<i32>();
                 }
                 
-                let max = max_vec.iter().max().unwrap_or_else(|| panic!("no local max"));
-//                    
-                powers.insert((x,y), *max);
+                if total > overall_max.2 {
+                    overall_max = (x,y,total);
+                }
+
             }
         }
         
-        let (max_cell, m) = 
-            powers.iter()
-            .max_by_key(|&(_, &v)| v)
-            .unwrap_or_else(|| panic!("couldn't find max"));
-
-        println!("{:#?} {}", max_cell, m);
-        *max_cell
-        
+        overall_max
     }
 }
 
@@ -119,9 +82,15 @@ mod tests {
         assert_that!(Grid::new(57).power_at((122,79))).is_equal_to(-5);
         assert_that!(Grid::new(39).power_at((217,196))).is_equal_to(0);
         assert_that!(Grid::new(71).power_at((101,153))).is_equal_to(4);
-
-        let coord = Grid::new(18).largest_total_power();
-        println!("coord = {:#?}", coord);
-
+        
+        let grid = Grid::new(2694);
+        
+        let result : HashMap<(usize, usize), i32> = (1..=GRID_SIZE).map(|size| {
+            print!("i = {:3} ", size);
+            let (x,y, max) = grid.largest_total_power(size);
+            println!(" {},{},{} ", x,y,max);
+            ((x,y),size as i32)
+        })
+        .collect();
     }
 }
