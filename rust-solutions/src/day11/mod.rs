@@ -1,5 +1,7 @@
 use itertools::Itertools;
 use std::collections::HashMap;
+use rayon::prelude::*;
+
 
 const GRID_SIZE: usize = 300;
 
@@ -84,12 +86,12 @@ mod tests {
         assert_that!(Grid::new(71).power_at((101,153))).is_equal_to(4);
         
         let grid = Grid::new(2694);
-        
-        let result : HashMap<(usize, usize), i32> = (1..=GRID_SIZE).map(|size| {
+        let sizes = (1..=GRID_SIZE).collect::<Vec<usize>>();
+        let result : HashMap<(usize, usize), i32> = sizes.par_iter().map(|size| {
             print!("i = {:3} ", size);
-            let (x,y, max) = grid.largest_total_power(size);
+            let (x,y, max) = grid.largest_total_power(*size);
             println!(" {},{},{} ", x,y,max);
-            ((x,y),size as i32)
+            ((x,y), *size as i32)
         })
         .collect();
     }

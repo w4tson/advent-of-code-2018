@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use crate::day10::parse::board_size;
 
+
 pub mod parse;
 
 #[derive(Debug)]

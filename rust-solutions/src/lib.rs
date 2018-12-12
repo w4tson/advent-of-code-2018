@@ -10,6 +10,15 @@ extern crate regex;
 extern crate core;
 extern crate itertools;
 extern crate chrono;
+extern crate rayon;
+
+
+use std::error::Error;
+
+
+macro_rules! err {
+    ($($tt:tt)*) => { Err(Box::<Error>::from(format!($($tt)*))) }
+}
 
 
 pub mod utils;
@@ -24,3 +33,4 @@ pub mod utils;
 //pub mod day09;
 //pub mod day10;
 pub mod day11;
+pub mod day12;
