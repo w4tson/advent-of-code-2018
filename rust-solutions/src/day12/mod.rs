@@ -186,8 +186,7 @@ mod tests {
 //        }
 
         //1625 37733 23
-        let remaining : u64 = ((50_000_000_000 - 1625) * 23) + 37733;
-        eprintln!("remaining = {:#?}", remaining);
+//        eprintln!("remaining = {:#?}", remaining);
 
 //        eprintln!("plants.print_it() = {:#?}", plants.first_occupied());
 //        eprintln!("plants.print_it() = {:#?}", plants.last_occupied());
