@@ -11,7 +11,7 @@ extern crate core;
 extern crate itertools;
 extern crate chrono;
 extern crate rayon;
-
+extern crate termion;
 
 use std::error::Error;
 
