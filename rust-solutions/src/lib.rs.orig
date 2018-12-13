@@ -10,6 +10,10 @@ extern crate regex;
 extern crate core;
 extern crate itertools;
 extern crate chrono;
+<<<<<<< HEAD
+extern crate bmp;
+extern crate image;
+=======
 extern crate rayon;
 
 
@@ -19,6 +23,7 @@ use std::error::Error;
 macro_rules! err {
     ($($tt:tt)*) => { Err(Box::<Error>::from(format!($($tt)*))) }
 }
+>>>>>>> d9679c559f7c835dbbc37f32518b2f4b5513a1d6
 
 
 pub mod utils;

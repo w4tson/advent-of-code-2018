@@ -5,6 +5,7 @@ use bmp::Pixel;
 use image::ImageBuffer;
 use std::collections::HashMap;
 
+
 pub mod parse;
 
 #[derive(Debug)]
