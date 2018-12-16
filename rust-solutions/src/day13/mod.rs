@@ -264,17 +264,17 @@ impl Track {
     }
 }
 
-mod tests {
-    use spectral::assert_that;
-    use super::*;
-    use crate::utils::file::read_puzzle_input;
-    use std::error::Error;
-    use super::parse::*;
-    use std::{thread, time};
-
-
-    #[test]
-    fn test() {
+    mod tests {
+        use spectral::assert_that;
+        use super::*;
+        use crate::utils::file::read_puzzle_input;
+        use std::error::Error;
+        use super::parse::*;
+        use std::{thread, time};
+    
+    
+        #[test]
+        fn test() {
         let input = include_str!("test_data2");
         let input = read_puzzle_input("day13");
         let mut track: Track = input.parse()
