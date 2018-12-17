@@ -156,7 +156,7 @@ impl Track {
 
 
        
-        let cart = '🛒';
+        let cart = '�';;
         let cart = '\u{1F980}';
 // (see http://www.termsys.demon.co.uk/vtansi.htm#colors)
         let esc_char = vec![27];

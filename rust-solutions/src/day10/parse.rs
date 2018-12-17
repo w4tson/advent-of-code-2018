@@ -12,13 +12,13 @@ impl FromStr for Point {
         
         let position_str = &position_str[10..];
         let mut pi = position_str.split(", ");
-        let x :i32  = pi.next().map(|px| px.parse().unwrap_or(0)).unwrap();
-        let y :i32  = pi.next().map(|py| py.parse().unwrap_or(0)).unwrap();
+        let x :i32  = pi.next().map(|px| px.trim().parse().unwrap_or_else(|e| panic!("oops {} {}", px,e))).unwrap();
+        let y :i32  = pi.next().map(|py| py.trim().parse().unwrap_or_else(|e| panic!("oops {} {}", py, e))).unwrap();
 
-        let vel_str = &position_str[..vel_str.len()-1];
+        let vel_str = &vel_str[..vel_str.len()-1];
         let mut vi = vel_str.split(", ");
-        let vx :i32  = vi.next().map(|px| px.parse().unwrap_or(0)).unwrap();
-        let vy :i32  = vi.next().map(|py| py.parse().unwrap_or(0)).unwrap();
+        let vx :i32  = vi.next().map(|px| px.trim().parse().unwrap_or(0)).unwrap();
+        let vy :i32  = vi.next().map(|py| py.trim().parse().unwrap_or(0)).unwrap();
         
         
         Ok(Point {
@@ -28,7 +28,7 @@ impl FromStr for Point {
     }
 }
 
-pub fn board_size(points : &Vec<Point>) -> (i32, i32, i32, i32) {
+pub fn board_size(points : &Vec<Point>) -> (u64, u64, i32, i32) {
     let minx =points.iter()
         .map(|p| p.position.0)
         .min()
@@ -51,7 +51,7 @@ pub fn board_size(points : &Vec<Point>) -> (i32, i32, i32, i32) {
     let width = minx.abs() + maxx.abs(); 
     let height = miny.abs() + maxy.abs(); 
     (
-        width, height, width - maxx.abs(), height - maxy.abs()
+        (width+1) as u64, (height+1) as u64, width - maxx.abs(), -1 * (height - maxy.abs())
 
     )
 }

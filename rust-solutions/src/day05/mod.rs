@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 mod foo;
 
-fn solve_part1(input : &str) -> usize {
+fn solve_part1(input : &str) -> usize {                                    
     let mut polymer : String = input.to_string();
     let mut done = false; 
     let mut old_length : usize;
