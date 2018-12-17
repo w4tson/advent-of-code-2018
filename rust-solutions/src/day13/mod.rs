@@ -6,114 +6,99 @@ use regex::Regex;
 use itertools::Itertools;
 use std::prelude::v1::Vec;
 use std::collections::HashMap;
+use termion::{color, clear};
+use termion::cursor;
+use core::time;
+use std::thread;
 
 pub mod parse;
 
 type Result<T> = result::Result<T, Box<Error>>;
 
-const WIDTH : usize = 6;
+const WIDTH: usize = 6;
 
-struct Track {
-    track : Vec<Vec<TrackType>>,
-    width : usize,
-    carts : Vec<Cart>
+pub struct Track {
+    track: Vec<Vec<TrackType>>,
+    width: usize,
+    carts: Vec<Cart>,
 }
 
-enum TrackType {
+pub enum TrackType {
     Vertical,
     Horizontal,
     Left,
     Right,
     Intersection,
-    None
+    None,
 }
 
-enum Direction {
+pub enum Direction {
     North,
     South,
     East,
-    West
+    West,
 }
 
-fn mode(numbers: &Vec<(usize, usize)>) -> ((usize, usize), usize) {
-    let mut occurrences = HashMap::new();
-
-    for &value in numbers {
-        *occurrences.entry(value).or_insert(0) += 1;
-    }
-
-    occurrences
-        .into_iter()
-        .max_by_key(|&(_, count)| count)
-        .expect("Cannot compute the mode of zero numbers")
-}
-
-struct Cart {
-    location : (usize, usize),
+pub struct Cart {
+    location: (usize, usize),
     facing: Direction,
-    intersections: usize
+    intersections: usize,
+    alive: bool,
 }
 
 impl Cart {
     pub fn new(facing: Direction, location: (usize, usize)) -> Cart {
-        Cart { location, facing, intersections: 0 }
-    }
-
-    pub fn to_char(&self) -> char {
-        match self.facing {
-            Direction::North => '^',
-            Direction::South => 'v',
-            Direction::West => '<',
-            Direction::East => '>',
-            _ => '!'
-        }
-    }
-
-    pub fn advance_north(&mut self) {
-        self.location.1 -= 1;
-    }
-
-    pub fn advance_south(&mut self) {
-        self.location.1 += 1;
-    }
-
-    pub fn advance_east(&mut self) {
-        self.location.0 += 1;
-    }
-
-    pub fn advance_west(&mut self) {
-        self.location.0 -= 1;
-    }
-
-    pub fn advance(&mut self) {
-        match &self.facing {
-            Direction::North =>  self.location.1 -= 1,
-            Direction::South =>  self.location.1 += 1,
-            Direction::East =>  self.location.0 += 1,
-            Direction::West =>  self.location.0 -= 1
-        }
+        Cart { location, facing, intersections: 0, alive: true }
     }
 
     pub fn turn_clockwise(&mut self) {
-//        println!("turn clockwise");
-        match self.facing {
-            Direction::North => self.facing = Direction::East,
-            Direction::South => self.facing = Direction::West,
-            Direction::East => self.facing = Direction::South,
-            Direction::West => self.facing = Direction::North
+        self.facing = match self.facing {
+            Direction::North => Direction::East,
+            Direction::South => Direction::West,
+            Direction::West => Direction::North,
+            Direction::East => Direction::South
         }
     }
 
     pub fn turn_counter_clockwise(&mut self) {
-//        println!("turn counter clockwise");
-        match self.facing {
-            Direction::North => self.facing = Direction::West,
-            Direction::East => self.facing = Direction::North,
-            Direction::South => self.facing = Direction::East,
-            Direction::West => self.facing = Direction::South
+        self.facing = match self.facing {
+            Direction::North => Direction::West,
+            Direction::South => Direction::East,
+            Direction::West => Direction::South,
+            Direction::East => Direction::North
         }
     }
 
+    pub fn advance(&mut self) {
+        match self.facing {
+            Direction::North => self.location.1 -= 1,
+            Direction::East => self.location.0 += 1,
+            Direction::South => self.location.1 += 1,
+            Direction::West => self.location.0 -= 1,
+        }
+    }
+
+    pub fn maybe_turn(&mut self) {
+        match self.intersections % 3 {
+            0 => self.turn_counter_clockwise(),
+            1 => {}
+            2 => self.turn_clockwise(),
+            _ => panic!("oops")
+        }
+        self.intersections += 1;
+    }
+    
+    pub fn turn(&mut self, track_type: &TrackType) {
+        //turn
+        match (&self.facing, track_type) {
+            (Direction::North, TrackType::Left) | (Direction::South, TrackType::Left) => self.turn_counter_clockwise(),
+            (Direction::East, TrackType::Left) | (Direction::West, TrackType::Left) => self.turn_clockwise(),
+            (Direction::North, TrackType::Right) | (Direction::South, TrackType::Right) => self.turn_clockwise(),
+            (Direction::East, TrackType::Right) | (Direction::West, TrackType::Right) => self.turn_counter_clockwise(),
+            (_, TrackType::Intersection) => self.maybe_turn(),
+            _ => {}
+        }
+    }
 }
 
 impl FromStr for Track {
@@ -121,130 +106,162 @@ impl FromStr for Track {
 
     fn from_str(s: &str) -> Result<Self> {
         let width = s.lines().map(|l| l.len()).max().unwrap();
-        println!("width {}", width);
         let mut carts = vec![];
-        let track : Vec<Vec<TrackType>> = s.lines().enumerate()
-            .map(|(y,line)|{
-                let mut row : Vec<TrackType> = line.chars().enumerate().map(|(x, ch)|{
+        let track: Vec<Vec<TrackType>> = s.lines().enumerate()
+            .map(|(y, line)| {
+                let mut row: Vec<TrackType> = line.chars().enumerate().map(|(x, ch)| {
                     match ch {
                         '|' => TrackType::Vertical,
                         '-' => TrackType::Horizontal,
                         '+' => TrackType::Intersection,
                         '/' => TrackType::Right,
                         '\\' => TrackType::Left,
-                        'v' => { carts.push(Cart::new(Direction::South,(x,y))); TrackType::Vertical },
-                        '^' => { carts.push(Cart::new(Direction::North,(x,y))); TrackType::Vertical },
-                        '<' => { carts.push(Cart::new(Direction::West,(x,y))); TrackType::Horizontal },
-                        '>' => { carts.push(Cart::new(Direction::East,(x,y))); TrackType::Horizontal },
+                        'v' => {
+                            carts.push(Cart::new(Direction::South, (x, y)));
+                            TrackType::Vertical
+                        }
+                        '^' => {
+                            carts.push(Cart::new(Direction::North, (x, y)));
+                            TrackType::Vertical
+                        }
+                        '<' => {
+                            carts.push(Cart::new(Direction::West, (x, y)));
+                            TrackType::Horizontal
+                        }
+                        '>' => {
+                            carts.push(Cart::new(Direction::East, (x, y)));
+                            TrackType::Horizontal
+                        }
                         ' ' => TrackType::None,
                         _ => panic!("{}", ch)
-                }}).collect();
+                    }
+                }).collect();
                 let len = row.len();
-
-                for n in 0..(width-len) {
+                //padding
+                for n in 0..(width - len) {
                     row.push(TrackType::None);
                 }
                 row
             }).collect();
-        
-        
-//        let t : Vec<TrackType> = t.iter().flat_map(|x| x).collect();
-        
 
-        Ok(
-            Track {
-                track,
-                width,
-                carts
-            }
-        )
+        Ok(Track { track, width, carts })
     }
 }
 
 impl Track {
-    pub fn print_it(&mut self) {
-        for y in 0..self.track.len() {
-            let row = &self.track[y];
-            for x in 0..row.len() {
-                let ch = match self.track[y][x] {
-                    TrackType::Horizontal => '-',
-                    TrackType::Vertical => '|',
-                    TrackType::Left => '\\',
-                    TrackType::Right => '/',
-                    TrackType::Intersection => '+',
-                    TrackType::None => '.',
-                    _ => '.'
-                };
+    
+    
+    
+    pub fn println_it(&self) {
 
-                let ch = self.carts.iter().find(|cart| cart.location == (x,y))
-                    .map(|cart| cart.to_char())
-                    .unwrap_or_else(|| ch);
-                print!("{}", ch);
-            }
+
+       
+        let cart = '�';;
+        let cart = '\u{1F980}';
+// (see http://www.termsys.demon.co.uk/vtansi.htm#colors)
+        let esc_char = vec![27];
+        let esc = String::from_utf8(esc_char).unwrap();
+        let reset: u8 = 0;
+        let bright: u8 = 1;
+        let black: u8 = 30;
+        let red: u8 = 31;
+//        ;
+        
+        
+        for (y, row) in self.track.iter().enumerate() {
+            row.iter().enumerate().for_each(|(x, t)| {
+                let ch = match t {
+                    TrackType::Vertical => "|",
+                    TrackType::Horizontal => "-",
+                    TrackType::Left => "\\",
+                    TrackType::Right => "/",
+                    TrackType::Intersection => "+",
+                    TrackType::None => " "
+                };
+//\033[1;31mbold red text\033[0m\
+                let s = self.alive_carts().iter().find(|&c| c.location == (x, y))
+                    .map(|c| match c.facing {
+                        Direction::North => format!("{}[{};{}m{}{}[{}m", esc, bright, red, '^', esc, reset),
+                        Direction::South => format!("{}[{};{}m{}{}[{}m", esc, bright, red, 'v', esc, reset),
+                        Direction::West => format!("{}[{};{}m{}{}[{}m", esc, bright, red, '<', esc, reset),
+                        Direction::East => format!("{}[{};{}m{}{}[{}m", esc, bright, red, '>', esc, reset),
+                    })
+                    .unwrap_or(ch.to_string());
+
+//                print!("{}", s);
+                let xx : u16 = x as u16 +1; 
+                let yy : u16 = y as u16 +1; 
+                print!("{goto}{s}",
+                         // Full screen clear.
+                         //clear = clear::All,
+                         // Goto the cell.
+                         goto  = cursor::Goto(xx,yy),
+                         s=s);
+            });
             println!();
+        }
+        let ten_millis = time::Duration::from_millis(100);
+
+        thread::sleep(ten_millis);
+    }
+
+    pub fn move_carts(&mut self) {
+        self.carts.sort_by_key(|c| c.location);
+
+        for i in 0..self.carts.len() {
+            let mut cart = &mut self.carts[i];
+            let (x, y) = cart.location;
+            let tt = &self.track[y][x];
+            //skip if dead
+            if !cart.alive { continue; }
+
+            
+            cart.turn(tt);
+            //advance
+            cart.advance();
+            self.check_collisions();
         }
     }
 
-  pub fn move_carts(&mut self) -> Option<(usize, usize)> {
-     self.carts.sort_by_key(|cart| cart.location);
-     for mut cart in &mut self.carts {
-         
-         let (x,y) = cart.location;
-         let track = &self.track[y][x];
-         
+    pub fn check_collisions(&mut self) {
+        let collisions = self.collisions();
 
-         //     |
-         //---  /---
-//              |
-         match (track, &cart.facing) {
-             (TrackType::Left, Direction::North) | (TrackType::Left, Direction::South) => cart.turn_counter_clockwise(),
-             (TrackType::Left, Direction::East) | (TrackType::Left, Direction::West)=> cart.turn_clockwise(),
-             (TrackType::Right, Direction::North) | (TrackType::Right, Direction::South) => cart.turn_clockwise(),
-             (TrackType::Right, Direction::East) | (TrackType::Right, Direction::West)=> cart.turn_counter_clockwise(),
-             (TrackType::Intersection,_) => {
-                match cart.intersections % 3 {
-                    0 => cart.turn_counter_clockwise(),
-                    1 => { },
-                    2 => cart.turn_clockwise(),
-                    _ => panic!("doh")
-                }
-                cart.intersections += 1;
-             },
-             _ => {
-//                 println!("no op");
-                 //no op
-             }
-         }
+        for (&location, &count) in collisions.iter() {
+            self.carts.iter_mut()
+                .filter(|c| c.location == location)
+                .for_each(|c| {
+                    println!("Removing cart at {},{}", c.location.0, c.location.1);
+                    c.alive = false;
+                })
+        }
+    }
 
-         cart.advance();
+    pub fn has_mulitple_carts(&self) -> bool {
+        let result = self.alive_carts().len() > 1;
+        if result == false {
+            println!("{:#?}", self.alive_carts()[0].location);
+        }
+        result
+    }
 
+    pub fn collisions(&self) -> HashMap<(usize, usize), usize> {
+        let mut occurrences = HashMap::new();
 
+        for value in &self.alive_carts() {
+            *occurrences.entry(value.location).or_insert(0) += 1;
+        }
 
+        occurrences
+            .into_iter()
+            .filter(|&(_, count)| count > 1)
+            .collect()
+    }
 
-     }
-
-      let deduped_total = &self.carts.iter()
-          .map(|cart| cart.location)
-          .dedup()
-          .count();
-
-      let ((x,y), count) = mode(&self.carts.iter().map(|c| c.location).collect());
-//      if self.carts.len() != *deduped_total {
-//          println!("CRASH!!!! ");
-//          self.carts.iter().for_each(|c| {
-//              println!("{},{}", c.location.0, c.location.1);
-//          })
-//
-//      }
-//     self.print_it();
-      match count > 1 {
-          true => Some((x,y)),
-          _ => None
-      }
-  }
-
-
-
+    pub fn alive_carts(&self) -> Vec<&Cart> {
+        self.carts.iter()
+            .filter(|&c| c.alive)
+            .collect()
+    }
 }
 
 mod tests {
@@ -253,39 +270,24 @@ mod tests {
     use crate::utils::file::read_puzzle_input;
     use std::error::Error;
     use super::parse::*;
+    use std::{thread, time};
+
 
     #[test]
     fn test() {
-        let input = include_str!("test_data");
-        let mut track : Track = input.parse()
-                        .unwrap_or_else(|_| panic!("Couldn't parse {}", input));
-
-        track.print_it();
-        for i in 0..15 {
-            println!("i = {}", i);
-            track.move_carts();
-        }
-//        assert_that!(foos[1].bar()).is_equal_to(2);
-
-
-    }
-
-    #[test]
-    fn part1() {
+        let input = include_str!("test_data2");
         let input = read_puzzle_input("day13");
-        let mut track : Track = input.parse()
+        let mut track: Track = input.parse()
             .unwrap_or_else(|_| panic!("Couldn't parse {}", input));
 
-        track.print_it();
-        let mut found = false;
+        track.println_it();
 
-        while !found {
-            match track.move_carts() {
-                Some(crashed) => { println!("{:#?}" , crashed); break; },
-                _ => {}
-            }
+        while track.has_mulitple_carts() {
+//            print!("{}[2J", 27 as char);
+            track.move_carts();
+            track.println_it();
+
+
         }
-//        let foo : Foo = input.parse().unwrap();
-//        println!("part1 {}", node.bar());
     }
 }
