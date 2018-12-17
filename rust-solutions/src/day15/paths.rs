@@ -1,112 +1,147 @@
-struct Cell {
-    row: usize,
-    col: usize,
-    dist: usize
+use std::fmt::Display;
+use std::fmt::Formatter;
+use std::fmt::Error;
+use std::collections::VecDeque;
+
+type Coord = (usize, usize);
+
+pub struct Cell {
+    y: usize,
+    x: usize,
+    dist: usize,
 }
 
-pub fn min_distance(grid : Vec<Vec<bool>>) -> i32 {
-    
-    
-    
-    let visited : Vec<Vec<bool>> = vec![
-        vec![bool; 5]; grid.len()
-    ];
-    
-    0
+impl Display for Cell {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        writeln!(f, "Cell ({},{}) [{}]", self.x, self.y, self.dist)
+    }
 }
 
+impl Cell {
+    pub fn new(x: usize, y: usize, dist: usize) -> Cell {
+        Cell { y, x, dist }
+    }
 
-// Make a visited array with all having “false” values except ‘0’cells which are assigned “true” values as they can not be traversed.
-// Keep updating distance from source value in each move.
-// Return distance when destination is met, else return -1 (no path exists in between source and destination).
-// filter_none
-// edit
-// play_arrow
+    pub fn manhatten_dist(coord1: &Coord, coord2: &Coord) -> usize {
+        let x = coord1.0 as i32 - coord2.0 as i32;
+        let y = coord1.1 as i32 - coord2.1 as i32;
+        (x.abs() + y.abs()) as usize
+    }
 
-// brightness_4
-// // C++ Code implementation for above problem 
-// #include <bits/stdc++.h> 
-// using namespace std; 
+    pub fn starting_cell(from: &Coord) -> Cell {
+        Cell { x: from.0, y: from.1, dist: 0 }
+    }
+}
 
-// #define N 4 
-// #define M 4 
+// fun of Cave.grid to boolean grid
 
-// // QItem for current location and distance 
-// // from source location 
-// class QItem { 
-// public: 
-//     int row; 
-//     int col; 
-//     int dist; 
-//     QItem(int x, int y, int w) 
-//         : row(x), col(y), dist(w) 
-//     { 
-//     } 
-// }; 
+pub fn min_distance(grid: Vec<Vec<bool>>, from: &Coord, to: &Coord) -> Option<usize> {
+    let N = grid.len();
+    let M = grid[0].len();
 
-// int minDistance(char grid[N][M]) 
-// { 
-//     QItem source(0, 0, 0); 
+    let mut visited = grid.clone();
 
-//     // To keep track of visited QItems. Marking 
-//     // blocked cells as visited. 
-//     bool visited[N][M]; 
-//     for (int i = 0; i < N; i++) { 
-//         for (int j = 0; j < M; j++) 
-//         { 
-//             if (grid[i][j] == '0') 
-//                 visited[i][j] = true; 
-//             else
-//                 visited[i][j] = false; 
+    let mut q = VecDeque::new(); 
+    q.push_back(Cell::starting_cell(from));
+    visited[from.1][from.0] = true;
+    
 
-//             // Finding source 
-//             if (grid[i][j] == 's') 
-//             { 
-//                source.row = i; 
-//                source.col = j; 
-//             } 
-//         } 
-//     } 
+    while !q.is_empty() {
+        let p = q.pop_front().unwrap();
 
-//     // applying BFS on matrix cells starting from source 
-//     queue<QItem> q; 
-//     q.push(source); 
-//     visited[source.row][source.col] = true; 
-//     while (!q.empty()) { 
-//         QItem p = q.front(); 
-//         q.pop(); 
+//        println!("{}", p);
 
-//         // Destination found; 
-//         if (grid[p.row][p.col] == 'd') 
-//             return p.dist; 
+        // found
+        if (p.x, p.y) == *to { return Some(p.dist); }
 
-//         // moving up 
-//         if (p.row - 1 >= 0 && 
-//             visited[p.row - 1][p.col] == false) { 
-//             q.push(QItem(p.row - 1, p.col, p.dist + 1)); 
-//             visited[p.row - 1][p.col] = true; 
-//         } 
+        // up 
+        if p.y >= 1 && !visited[p.y - 1][p.x] {
+//            println!("up");
+            q.push_back(Cell::new(p.x, p.y - 1, p.dist + 1));
+            visited[p.y - 1][p.x] = true;
+        }
 
-//         // moving down 
-//         if (p.row + 1 < N && 
-//             visited[p.row + 1][p.col] == false) { 
-//             q.push(QItem(p.row + 1, p.col, p.dist + 1)); 
-//             visited[p.row + 1][p.col] = true; 
-//         } 
+        // down 
+        if p.y + 1 < N && !visited[p.y + 1][p.x] {
+//            println!("down");
+            q.push_back(Cell::new(p.x, p.y + 1, p.dist + 1));
+            visited[p.y + 1][p.x] = true;
+        }
 
-//         // moving left 
-//         if (p.col - 1 >= 0 && 
-//             visited[p.row][p.col - 1] == false) { 
-//             q.push(QItem(p.row, p.col - 1, p.dist + 1)); 
-//             visited[p.row][p.col - 1] = true; 
-//         } 
+        // left 
+        if p.x >= 1 && !visited[p.y][p.x - 1] {
+//            println!("left");
+            q.push_back(Cell::new(p.x - 1, p.y, p.dist + 1));
+            visited[p.y][p.x - 1] = true;
+        }
 
-//          // moving right 
-//         if (p.col + 1 < M && 
-//             visited[p.row][p.col + 1] == false) { 
-//             q.push(QItem(p.row, p.col + 1, p.dist + 1)); 
-//             visited[p.row][p.col + 1] = true; 
-//         } 
-//     } 
-//     return -1; 
-// }  
+        // right 
+        if p.x + 1 < M && !visited[p.y][p.x + 1] {
+//            println!("right");
+            q.push_back(Cell::new(p.x + 1, p.y, p.dist + 1));
+            visited[p.y][p.x + 1] = true;
+        }
+    }
+
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        let input: Vec<Vec<bool>> = vec![
+            vec![true, false, true, false],
+            vec![false, true, false, false],
+            vec![true, false, false, false],
+            vec![false, false, false, false]
+        ];
+
+        assert_eq!(Some(6), min_distance(input, &(3, 0), &(0, 3)));
+    }
+    
+    #[test]
+    fn test2() {
+//        #######
+//        #.E...#
+//        #.....#
+//        #...G.#
+//        #######
+
+        let input: Vec<Vec<bool>> = vec![
+            vec![true, true,  true,  true,  true,  true,  true],
+            vec![true, false, false, false, false, false, true],
+            vec![true, false, false, false, false, false, true],
+            vec![true, false, false, false, false, false, true],
+            vec![true, true,  true,  true,  true,  true,  true]
+        ];
+        assert_eq!(Some(3), min_distance(input, &(2, 1), &(3, 3)));
+    }
+    
+    #[test]
+    fn another() {
+        //#######
+        //#...G.#
+        //#..G.G#
+        //#.#.#G#
+        //#...#E#
+        //#.....#
+        //#######
+
+        let input: Vec<Vec<bool>> = vec![
+            vec![true, true,  true,  true,  true,  true,  true],
+            vec![true, false, false, false, true, false, true],
+            vec![true, false, false, true,  false, false, true],
+            vec![true, false, true,  false, true, true, true],
+            vec![true, false, false, false, true, false, true],
+            vec![true, false, false, false, false, false, true],
+            vec![true, true,  true,  true,  true,  true,  true]
+        ];
+
+        assert_eq!(None, min_distance(input, &(5, 2), &(5, 5)));
+
+
+    }
+}

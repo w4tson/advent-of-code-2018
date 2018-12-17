@@ -1,16 +1,18 @@
 use std::thread;
 use std::time::Duration;
+use aoc2018::utils::file::read_puzzle_input;
+use aoc2018::day15::Cave;
 
 fn main() {
-    thread::spawn(|| {
-        for i in 1..10 {
-            println!("hi number {} from the spawned thread!", i);
-            thread::sleep(Duration::from_millis(1));
-        }
-    });
+    let input = read_puzzle_input("day15");
+    let mut cave: Cave = input.parse().unwrap();
 
-    for i in 1..5 {
-        println!("hi number {} from the main thread!", i);
-        thread::sleep(Duration::from_millis(1));
+    loop {
+//            println!("{:#?}", cave);
+        if let Some(result) = cave.tick() {
+            println!("res {}", result);
+            break;
+        }
+        if cave.rounds() % 50 ==0 { println!("{} {} Elves {} Goblins", cave.rounds(), cave.elves(), cave.goblins()) };
     }
 }
