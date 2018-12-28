@@ -5,6 +5,7 @@
 #![feature(try_trait)]
 #![feature(slice_patterns)]
 #![feature(bind_by_move_pattern_guards)]
+#![feature(try_from)]
 
 
 extern crate spectral;
@@ -39,6 +40,8 @@ pub mod utils;
 //pub mod day12;
 //pub mod day13;
 //pub mod day14;
+//pub mod day15;
+//pub mod day16;
 //pub mod day17;
-pub mod day18;//pub mod day15;
-pub mod day16;
+//pub mod day18;
+pub mod day19;

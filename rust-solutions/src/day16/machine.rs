@@ -164,31 +164,6 @@ impl Machine {
 //    13 eqir
 //    14 eqri
 //    15 eqrr
-
-    pub fn exec_all(&mut self, instruction: &Instruction) -> Vec<Result<Vec<i32>>> {
-        let registers = self.registers.clone();
-        
-        
-        println!("r {:#?}", registers);
-        let mut result = vec![];
-        result.push(self.addr(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.addi(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.mulr(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.muli(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.banr(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.bani(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.borr(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.bori(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.setr(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.seti(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.gtir(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.gtri(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.gtrr(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.eqir(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.eqri(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result.push(self.eqrr(instruction.a(), instruction.b(), instruction.c())); println!("r {:#?}", registers); self.registers = registers.clone(); println!("r {:#?}", registers);
-        result
-    }
 }
 
 pub struct Instruction {
@@ -216,25 +191,3 @@ impl Instruction {
         self.instruction[3]
     }
 }
-
-//
-//impl FromStr for Foo {
-//    type Err = Box<Error>;
-//
-//    fn from_str(s: &str) -> Result<Self> {
-//        lazy_static! {
-//            static ref RE: Regex = Regex::new("Foo=(?P<bar>[0-9])").unwrap();
-//        }
-//
-//        let caps = match RE.captures(s) {
-//            None => return err!("unrecognized foo"),
-//            Some(caps) => caps,
-//        };
-//
-//        Ok(
-//            Foo {
-//                bar: caps["bar"].parse()?
-//            }
-//        )
-//    }
-//}
