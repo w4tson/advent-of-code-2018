@@ -1,18 +1,18 @@
 use std::thread;
 use std::time::Duration;
 use aoc2018::utils::file::read_puzzle_input;
-use aoc2018::day15::Cave;
+use aoc2018::day19::machine::Instruction;
+use aoc2018::day19::machine::Machine;
 
 fn main() {
-    let input = read_puzzle_input("day15");
-    let mut cave: Cave = input.parse().unwrap();
+    let input = read_puzzle_input("day21");
 
-    loop {
-//            println!("{:#?}", cave);
-        if let Some(result) = cave.tick() {
-            println!("res {}", result);
-            break;
-        }
-        if cave.rounds() % 50 ==0 { println!("{} {} Elves {} Goblins", cave.rounds(), cave.elves(), cave.goblins()) };
-    }
+    let instructions : Vec<Instruction> =
+        input.lines()
+            .map(|line| line.parse())
+            .collect::<Result<_, _>>()
+            .expect("should be good");
+    
+    let mut machine = Machine::new( &instructions, 2, 0);
+    machine.run();
 }

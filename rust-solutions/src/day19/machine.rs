@@ -7,6 +7,7 @@ use std::thread;
 use std::time;
 use std::fmt::Display;
 use std::fmt::Formatter;
+use std::collections::HashMap;
 
 
 pub type MResult<T> = result::Result<T, Box<NoneError>>;
@@ -20,38 +21,63 @@ pub struct Machine {
 }
 
 impl Machine {
-    pub fn new(instructions: Vec<Instruction>, ip_id: usize) -> Machine {
-        Machine { registers: vec![1, 0, 0, 0, 0, 0], instructions, ip: 0, ip_binding: ip_id }
+    pub fn new(instructions: &Vec<Instruction>, ip_id: usize, register_zero: i128) -> Machine {
+        
+        Machine { registers: vec![0, 0, 0, 0, 0, register_zero], instructions: instructions.to_vec(), ip: 0, ip_binding: ip_id }
     }
-    
-    //3  "0, 1, 10551282, 2, 0, 4464672"
-    //3  "1, 2, 10551282, 2, 0, 10551280"
-    //3  "1, 3, 10551282, 2, 0, 3"
-    //3  "1, 4, 10551282, 2, 0, 3"
-    //3  "10551283, 10551282, 10551282, 2, 0, 1463077"
     
     pub fn run(&mut self) {
         let mut count = 0;
+        let mut c = 0;
+        let mut max = 0;
+        let mut finishing_values : HashMap<i128, usize> = HashMap::new();
+        
+        
         loop {
             self.registers[self.ip_binding] = self.ip;
             if self.ip >= 0 && self.ip < self.instructions.len() as i128 {
                 let i = &self.instructions[self.ip as usize];
-//                print!("{} ", &i);
+                
                 self.exec(i.get_id(), i.a(), i.b(), i.c());
-//                thread::sleep(time::Duration::from_millis(500));
+//                thread::sleep(time::Duration::from_millis(3));
                 self.ip = self.registers[self.ip_binding];
                 self.ip += 1;
                 count += 1;
-                //                             10551282 
-                if self.registers[5] > 10551280 || self.ip >11 || self.ip < 3 { //, 2438478"
+                c+=1;
 
-                    println!("{}    {}  {:#?}",count,  self.ip, self.registers.iter().join(", "));
+                if  self.ip == 28 {
+                    let ii =  format!("{}", self.registers.iter().join(", "));
+                    let result = self.registers[4];
+//                    println!("{:15},  {:10}    {:20}", result, c, ii);
+
+                    if let Some(_) = finishing_values.get(&result) {
+                        println!("{} is dupe", result);
+                        let max = finishing_values.values().max().unwrap_or_else(|| panic!("no x "));
+                        
+
+                        for (k, v) in finishing_values.iter().filter(| (_, &v)| v == *max ) {
+                            println!("{:15} {:10}", k, v);
+
+                        }
+                        println!("{:15},  {:10}    {:20}", result, c, ii);
+                        break;
+                    }
+                    finishing_values.insert(result, c);
+                    
+
+                    if c >=  max {
+                        max = c;
+                        //println!("{:20}   [{}]", ii, self.registers.iter().join(", "));
+                    }
+                    //c = 0;
+
                 }
+               
             } else {
+                println!("terminated");
                 break;
             }
         }
-        println!("reg {:#?}", self.registers);
     }
 
     pub fn addr(&mut self, a: i128, b: i128, c: i128) -> MResult<Vec<i128>> {
@@ -209,9 +235,10 @@ impl Machine {
     
 }
 
+#[derive(Clone)]
 pub struct Instruction {
     instruction: Vec<i128>,
-    name: String
+    name: String,
 }
 
 impl Instruction {
@@ -275,7 +302,7 @@ impl FromStr for Instruction {
 
 impl Display for Instruction {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
-        writeln!(f, "{} {} {} {}", self.name, self.instruction[1], self.instruction[2], self.instruction[3])
+        write!(f, "{} {} {} {}", self.name, self.instruction[1], self.instruction[2], self.instruction[3])
     }
 }
 

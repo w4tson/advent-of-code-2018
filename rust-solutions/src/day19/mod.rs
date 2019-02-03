@@ -9,6 +9,8 @@ mod tests {
     use super::*;
     use crate::day19::machine::Machine;
     use crate::utils::file::read_puzzle_input;
+    use std::thread;
+    use std::time;
 
     #[test]
     fn test() {
@@ -20,7 +22,7 @@ mod tests {
                 .map(|line| line.parse())
                 .collect::<Result<_, _>>()
                 .expect("should be good");
-        let mut m = Machine::new(instructions, 0);
+        let mut m = Machine::new(&instructions, 0, 1);
         m.run();
                 
     }
@@ -35,7 +37,7 @@ mod tests {
                 .map(|line| line.parse())
                 .collect::<Result<_, _>>()
                 .expect("should be good");
-        let mut m = Machine::new( instructions, 3);
+        let mut m = Machine::new( &instructions, 3, 1);
         m.run();
     }
 
