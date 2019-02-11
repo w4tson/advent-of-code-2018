@@ -17,11 +17,17 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Debug;
 use std::collections::HashSet;
+use std::collections::BinaryHeap;
+use std::cmp::Ordering;
+use std::collections::BTreeSet;
+use std::cell::Cell;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub mod parse;
 
-//type Result<T> = result::Result<T, Box<Error>>;
 type Coord = (usize, usize);
+const INFINITY : usize = usize::max_value()/2;
 
 
 #[derive(PartialEq)]
@@ -90,118 +96,87 @@ impl Cave {
     
     fn switch_penalty(&mut self, current: &Node, neighbour: &Node) -> usize {
         let cave_type = self.cave_type_at(&neighbour.location); 
-        match (cave_type, &current.equipment) {
-            (c,k) if c == Rocky && *k == Kit::Nowt => usize::max_value() / 2,
-            (c,k) if c == Wet && *k == Kit::Torch => usize::max_value() / 2,
-            (c,k) if c == Narrow && *k == Kit::ClimbingGear => usize::max_value() /2,
-            (c,k) if *k != neighbour.equipment => 7,
+        let cave_type_current = self.cave_type_at(&current.location); 
+        match (cave_type_current, cave_type, &current.equipment) {
+            (_, c,k) if c == Rocky && *k == Kit::Nowt => INFINITY,
+            (_, c,k) if c == Wet && *k == Kit::Torch => INFINITY,
+            (_, c,k) if c == Narrow && *k == Kit::ClimbingGear => INFINITY,
+            (c, _,k) if c == Rocky && *k == Kit::Nowt => INFINITY,
+            (c, _,k) if c == Wet && *k == Kit::Torch => INFINITY,
+            (c, _,k) if c == Narrow && *k == Kit::ClimbingGear => INFINITY,
+            (_, c,k) if *k != neighbour.equipment => 7,
             _ => 0
         }
     }
     
-    pub fn dist_to_target(&mut self) -> usize {
-        let mut unvisited: HashSet<Node> = HashSet::new();
-        let mut visited : Vec<Node> = vec![];
-        let mut distances : HashMap<Node, usize> = HashMap::new();
+    pub fn dist_to_target(&mut self) -> Option<usize> {
+        let mut heap = BinaryHeap::new();
+        let mut distances : HashMap<(Coord, Kit), usize> = HashMap::new();
+
         let mut prev : HashMap<Node, Node> = HashMap::new();
-        let origin = Node { location: (0,0), equipment: Torch };
-        unvisited.insert(origin.clone());
-        visited.push(Node { location: (0,0), equipment: ClimbingGear });
-        visited.push(Node { location: (0,0), equipment: Nowt });
-        let mut current = origin.clone();
-        distances.insert(origin, 0);
-        let mut result = 0;
+
+        heap.push(Node { location: (0,0), equipment: Torch, cost: 0 });
+
+
+        distances.insert(((0,0), Kit::Torch), 0);
         
-        loop {
-            // get all unvisited neighbours
-            // for each
-            //   calc tentative distance
-            //   insert into distances map if value is smaller
-            //
-            // remove current node from unvisited and push it onto visited
-            // has the destination been visited ? break;
-            // *may need to check all 3 distances if there is less than 7 in the differnece
-            
-            // find the unvisited with the smallest dist 
-            // set that to be current
-//            thread::sleep(time::Duration::from_secs(1));
+        while let Some( current) = heap.pop() {
 
-            
-            
-            let neighbours = current.unvisited_neighbours(&visited);
-//            eprintln!("current = {} neighbours {:?}", current, neighbours);
-            
-            unvisited.extend(neighbours.clone().into_iter());
-            
-            for i in 0..neighbours.len() {
-                let neighbour = &neighbours[i];
-                let curr_distance = distances.get(&current).unwrap();
-                
-                //todo calc switch penalty. This is broken
-                //     also i don't know why its not returning. Maybe do an investigation
-                let tentative_dist = curr_distance + 1 + self.switch_penalty(&current, &neighbour);
-                
-                let mut dist = distances.entry(neighbour.clone())
-                    .or_insert(usize::max_value());
+            let location = &current.location;
+            let equipment = &current.equipment;
+            let cost = &current.cost;
+           
 
-                if tentative_dist < *dist {
-                    *dist = tentative_dist;
-                    prev.insert(neighbour.clone(), current.clone());
+            if *location == self.target && *equipment == Kit::Torch {
+                let mut a = current.clone();
+                while let Some(n) = prev.get(&a)  {
+                    println!("{}", n);
+                    a = n.clone();
                 }
-            }
-            
-//            let index = unvisited.iter().position(|n| *n == current).unwrap();
-            unvisited.remove(&current);
-            visited.push(current.clone());
-
-            if visited.iter().any(|n| n.location == self.target && n.equipment == Kit::Torch) {
-                println!("Reached target {:#?}", current);
-                
-                let mut a = &current;
-                while let Some(node) = prev.get(&a) {
-                    println!(" : {}", node );
-                    a = &node;
-                }
-                
-                result = *distances.get(&current).unwrap();
-                break;
+                return Some(*cost); 
             }
 
-//            eprintln!("\nunvistited = {:#?}\n", unvisited.iter().map(|n| format!("{}, {}", n, distances.get(n).unwrap_or(&usize::max_value()))).collect_vec());
-//            eprintln!("\nvisited = {:#?}\n", visited.iter().map(|n| format!("{}, {}", n, distances.get(n).unwrap_or(&usize::max_value()))).collect_vec());
+            if *cost > *distances.entry((location.clone(), equipment.clone())).or_insert(INFINITY) {
+                continue; 
+            }
             
+            let neighbours : Vec<Node> = current.unvisited_neighbours();
             
-            let shortest_unvisited= unvisited.iter().min_by_key(|n| distances.get(*n).unwrap_or(&usize::max_value()))
-                .unwrap();
+            for neighbour in neighbours {
 
-            current = shortest_unvisited.clone();
+                let next = Node { location: neighbour.location, cost: cost + 1 + self.switch_penalty(&current, &neighbour), equipment: neighbour.equipment };
 
-//            eprintln!("unvisited = {:#?}", unvisited);
-            
+
+                let mut next_curr_dist = distances.entry((next.location.clone(), next.equipment.clone())).or_insert(INFINITY);
+
+                if next.cost < *next_curr_dist {
+                    *next_curr_dist = next.cost;
+                    prev.insert(next.clone(), current.clone());
+                    heap.push(next);
+                }
+            }
         }
-        
-        
 
-
-        result
+        None
     }
 }
 
-#[derive(Eq, PartialEq, Hash, Clone, Debug)]
+#[derive(Eq, PartialEq, Hash, Clone, Debug, Ord, PartialOrd)]
 enum Kit {
     Nowt,
     ClimbingGear,
     Torch
 }
 
-#[derive(Eq, PartialEq, Hash, Clone)]
+#[derive(Eq, Hash, Clone)]
 struct Node {
     location: Coord,
     equipment: Kit,
+    cost: usize
 }
 
 impl Node {
-    fn unvisited_neighbours(&self, visited: &Vec<Node>) -> Vec<Node> {
+    fn unvisited_neighbours(&self,) -> Vec<Node> {
         let (x,y) = self.location;
         let mut neighbours: Vec<Coord> = vec![(x+1, y), (x,y+1)];
         if x > 0 {
@@ -212,30 +187,55 @@ impl Node {
             neighbours.push((x, y-1));
         }
 
+
         neighbours.iter().fold(vec![], |mut acc, item|{
             acc.extend_from_slice(&[
-                Node{location: *item, equipment: Kit::Torch},
-                Node{location: *item, equipment: Kit::Nowt},
-                Node{location: *item, equipment: Kit::ClimbingGear}
+                Node{location: *item, equipment: Kit::Torch, cost: INFINITY},
+                Node{location: *item, equipment: Kit::Nowt,  cost: INFINITY},
+                Node{location: *item, equipment: Kit::ClimbingGear, cost: INFINITY  }
             ]);
             acc
-        }).into_iter().filter(|neighbour|{
-            !visited.contains(&&neighbour)
         })
-        .collect()
+        
         
     }
 }
 
+impl Ord for Node {
+    fn cmp(&self, other: &Node) -> Ordering {
+        other.cost.cmp(&self.cost)
+        .then(self.location.0.cmp(&other.location.0))
+        .then(self.location.1.cmp(&other.location.1))
+            .then(self.equipment.cmp(&other.equipment))
+    }
+}
+
+impl PartialOrd for Node {
+    fn partial_cmp(&self, other: &Node) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Node) -> bool {
+        self.cost == other.cost && self.location.0 == other.location.0 && self.location.1 == other.location.1 && self.equipment == other.equipment 
+    }
+}
+
+
+
 impl Display for Node {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "({},{}) {:#?}",self.location.0,self.location.1,self.equipment)
+        let cost : String = if self.cost == INFINITY { '\u{221E}'.to_string() } else { format!("{}",self.cost) };
+
+        write!(f, "({},{}) {:#?} [{}]",self.location.0,self.location.1,self.equipment, cost)
     }
 }
 
 impl Debug for Node {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "({},{}) {:#?}",self.location.0,self.location.1,self.equipment)
+        let cost : String = if self.cost == INFINITY { '\u{221E}'.to_string() } else { format!("{}",self.cost) };
+        write!(f, "({},{}) {:#?} [{}]",self.location.0,self.location.1,self.equipment, cost)
     }
 }
 
@@ -263,9 +263,14 @@ mod tests {
     }
     
     #[test]
-    fn part2() {
+    fn part2_example() {      
         let mut cave = Cave::new( 510, (10,10));
-        assert_eq!(45, cave.dist_to_target())
+        assert_eq!(Some(45), cave.dist_to_target())
     }
 
+    #[test]
+    fn part2() {
+        let mut cave = Cave::new( 11817, (9,751));
+        println!("Result = {:#?}", cave.dist_to_target());
+    }
 }
